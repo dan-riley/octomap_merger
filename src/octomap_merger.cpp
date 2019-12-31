@@ -130,7 +130,7 @@ Eigen::Matrix4f getICPTransformation(
   PointCloud::Ptr reg_result;
 
   if (src->size() < tgt->size()) {
-    reg.setInputCloud(src);
+    reg.setInputSource(src);
     reg.setInputTarget(tgt);
 
     // Run the same optimization in a loop and visualize the results
@@ -141,7 +141,7 @@ Eigen::Matrix4f getICPTransformation(
       src = reg_result;
 
       // Estimate
-      reg.setInputCloud(src);
+      reg.setInputSource(src);
       reg.align(*reg_result);
 
       // accumulate transformation between each Iteration
@@ -167,7 +167,7 @@ Eigen::Matrix4f getICPTransformation(
       prev = reg.getLastIncrementalTransformation();
     }
   } else {
-    reg.setInputCloud(tgt);
+    reg.setInputSource(tgt);
     reg.setInputTarget(src);
 
     // Run the same optimization in a loop and visualize the results
@@ -178,7 +178,7 @@ Eigen::Matrix4f getICPTransformation(
       tgt = reg_result;
 
       // Estimate
-      reg.setInputCloud(tgt);
+      reg.setInputSource(tgt);
       reg.align(*reg_result);
 
       // accumulate transformation between each Iteration
@@ -484,8 +484,14 @@ int main(int argc, char** argv) {
                coeffs[6], coeffs[7], coeffs[8], translation.z(),
                0, 0, 0, 1;
 
-  OcTree* tree1 = dynamic_cast<OcTree*>(OcTree::read(filename1));
-  OcTree* tree2 = dynamic_cast<OcTree*>(OcTree::read(filename2));
+  OcTree *tree1, *tree2;
+  if (filename1.substr(filename1.length() - 2) == "ot") {
+    tree1 = dynamic_cast<OcTree*>(OcTree::read(filename1));
+    tree2 = dynamic_cast<OcTree*>(OcTree::read(filename2));
+  } else {
+    tree1 = new OcTree(filename1);
+    tree2 = new OcTree(filename2);
+  }
 
   // initial TF Matrix
   std::cout << transform << std::endl;
@@ -565,7 +571,11 @@ int main(int argc, char** argv) {
   // tree1 is now the compressed merged map
 
   // write merged map to file
-  tree1->write(outputFilename);
+  if (outputFilename.substr(outputFilename.length() - 2) == "ot") {
+    tree1->write(outputFilename);
+  } else {
+    tree1->writeBinary(outputFilename);
+  }
 
   delete tree1;
   delete tree2;
