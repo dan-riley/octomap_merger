@@ -8,7 +8,7 @@
 #include <pcl/registration/icp_nl.h>
 #include <pcl/registration/transforms.h>
 #include <octomap/octomap.h>
-#include <octomap/OcTreeLUT.h>
+#include <octomap/OcTreeBase.h>
 #include <fstream>
 #include <iostream>
 #include <string.h>
@@ -122,7 +122,9 @@ Eigen::Matrix4f getICPTransformation(
   // Align
   pcl::IterativeClosestPointNonLinear<PointT, PointT> reg;
   reg.setTransformationEpsilon(mapRes / 60);
-  reg.setMaxCorrespondenceDistance(10 * mapRes);
+  // Increased this from 10 to 200 because of errors when running
+  // Not sure what the right numbers should be
+  reg.setMaxCorrespondenceDistance(200 * mapRes);
 
   Eigen::Matrix4f Ti = Eigen::Matrix4f::Identity(), prev;
   PointCloud::Ptr reg_result;
@@ -149,13 +151,13 @@ Eigen::Matrix4f getICPTransformation(
       // is smaller than the threshold, refine the process by reducing
       // the maximal correspondence distance
       if (reg.getMaxCorrespondenceDistance() > 0.2) {
-        if (fabs((reg.getLastIncrementalTransformation() - prev.sum()))
+        if (fabs((reg.getLastIncrementalTransformation().sum() - prev.sum()))
             < reg.getTransformationEpsilon())
           reg.setMaxCorrespondenceDistance(
               reg.getMaxCorrespondenceDistance() - 0.1
               );
       } else if (reg.getMaxCorrespondenceDistance() > 0.002) {
-        if (fabs((reg.getLastIncrementalTransformation() - prev.sum()))
+        if (fabs((reg.getLastIncrementalTransformation().sum() - prev.sum()))
             < reg.getTransformationEpsilon())
           reg.setMaxCorrespondenceDistance(
               reg.getMaxCorrespondenceDistance() - 0.001
@@ -171,9 +173,8 @@ Eigen::Matrix4f getICPTransformation(
     // Run the same optimization in a loop and visualize the results
     reg_result = tgt;
     reg.setMaximumIterations(2);
-    for (int i=0; i < MAXITER; ++i)
-    {
-      // save cloud forvisualization purpose
+    for (int i=0; i < MAXITER; ++i) {
+      // save cloud for visualization purpose
       tgt = reg_result;
 
       // Estimate
@@ -187,13 +188,13 @@ Eigen::Matrix4f getICPTransformation(
       // is smaller than the threshold, refine the process by reducing
       // the maximal correspondence distance
       if (reg.getMaxCorrespondenceDistance() > 0.2) {
-        if (fabs((reg.getLastIncrementalTransformation() - prev.sum()))
+        if (fabs((reg.getLastIncrementalTransformation().sum() - prev.sum()))
             < reg.getTransformationEpsilon())
           reg.setMaxCorrespondenceDistance(
               reg.getMaxCorrespondenceDistance() - 0.1
               );
       } else if (reg.getMaxCorrespondenceDistance() > 0.002) {
-        if (fabs((reg.getLastIncrementalTransformation() - prev.sum()))
+        if (fabs((reg.getLastIncrementalTransformation().sum() - prev.sum()))
             < reg.getTransformationEpsilon())
           reg.setMaxCorrespondenceDistance(
               reg.getMaxCorrespondenceDistance() - 0.001
@@ -206,6 +207,11 @@ Eigen::Matrix4f getICPTransformation(
   }
 
   return Ti * tfEst;
+}
+
+double getSign(double x) {
+  if (x < 0) return -1;
+  else return 1;
 }
 
 void transformTree(OcTree *tree, Eigen::Matrix4f& transform) {
@@ -232,9 +238,6 @@ void transformTree(OcTree *tree, Eigen::Matrix4f& transform) {
   // get the minimum and maxin y so we can step along each row
   tree->getMetricMin(minX, minY, minZ);
   tree->getMetricMax(maxX, maxY, maxZ);
-
-  // get a Lookuptable
-  OcTreeLUT ocTreeLUT(treeRes);
 
   // allocate a vector of points
   std::vector<point3d> points;
@@ -392,19 +395,20 @@ void transformTree(OcTree *tree, Eigen::Matrix4f& transform) {
   delete transformed;
 }
 
-void expandLevel(std::vector<OcTreeNode *> *nodePtrs) {
+void expandLevel(OcTreeBase<OcTreeNode> *base, std::vector<OcTreeNode *> *nodePtrs) {
   unsigned size = nodePtrs->size();
   for (unsigned i=0; i < size; i++) {
     OcTreeNode *parent = nodePtrs->front();
-    parent->expandNode();
+    base->expandNode(parent);
     nodePtrs->erase(nodePtrs->begin());
     for (unsigned j=0; j < 8; j++) {
-      nodePtrs->push_back(parent->getChild(j));
+      nodePtrs->push_back(base->getNodeChild(parent, j));
     }
   }
 }
 
-unsigned expandNodeMultiLevel(OcTree *tree, OcTreeNode *node, unsigned currentDepth) {
+unsigned expandNodeMultiLevel(OcTreeBase<OcTreeNode> *base, OcTree *tree,
+                      OcTreeNode *node, unsigned currentDepth, int levels) {
   if (currentDepth == (int)tree->getTreeDepth()) {
     return 0;
   }
@@ -417,7 +421,7 @@ unsigned expandNodeMultiLevel(OcTree *tree, OcTreeNode *node, unsigned currentDe
     if (currentDepth == (int)tree->getTreeDepth()) {
       return levelsCounter;
     }
-    expandLevel(&nodePtrs);
+    expandLevel(base, &nodePtrs);
     levelsCounter++;
     currentDepth++;
   }
@@ -478,7 +482,7 @@ int main(int argc, char** argv) {
   transform << coeffs[0], coeffs[1], coeffs[2], translation.x(),
                coeffs[3], coeffs[4], coeffs[5], translation.y(),
                coeffs[6], coeffs[7], coeffs[8], translation.z(),
-               0,  0,  0,  1;
+               0, 0, 0, 1;
 
   OcTree* tree1 = dynamic_cast<OcTree*>(OcTree::read(filename1));
   OcTree* tree2 = dynamic_cast<OcTree*>(OcTree::read(filename2));
@@ -494,8 +498,12 @@ int main(int argc, char** argv) {
   pcl::PointCloud<pcl::PointXYZ> tree2Points;
   tree2PointCloud(tree2, tree2Points);
 
+  double res = tree1->getResolution();
   // get refined matrix
-  transform = getICPTransformation(tree1Points, tree2Points, transform);
+  transform = getICPTransformation(tree1Points, tree2Points, transform, res);
+
+  // Create this Base to allow newer implmentation of Octomap from the original
+  OcTreeBase<OcTreeNode> *base = new typename OcTreeBase<OcTreeNode>::OcTreeBase(res);
 
   if (roll != 0 ||
       pitch != 0 ||
@@ -531,16 +539,16 @@ int main(int argc, char** argv) {
             if (depthIn1 == (int)tree1->getTreeDepth()) {
               break;
             }
-            nodeIn1->expandNode();
+
+            base->expandNode(nodeIn1);
             nodeKey = tree1->coordToKey(point);
             depthIn1++;
           }
           nodeIn1->setLogOdds(
               logodds(nodeIn1->getOccupancy() + it->getOccupancy()));
-        }
-        else if (depthDiff < 0) {
+        } else if (depthDiff < 0) {
           // map1 is lower depth, add children to 2
-          expandNodeMultiLevel(tree2, tree2->search(point),
+          expandNodeMultiLevel(base, tree2, tree2->search(point),
               it.getDepth(), abs(depthDiff));
           // now that we are expanded the other expanded nodes
           // will be handled in subsequent loop iterations
