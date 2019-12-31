@@ -21,5 +21,8 @@ include_directories(
 add_library(icp_align src/icp_align.cpp)
 target_link_libraries(icp_align ${catkin_LIBRARIES})
 
+add_library(map_merger src/map_merger.cpp)
+target_link_libraries(map_merger ${catkin_LIBRARIES})
+
 add_executable(octomap_merger src/octomap_merger.cpp)
-target_link_libraries(octomap_merger icp_align ${catkin_LIBRARIES})
+target_link_libraries(octomap_merger icp_align map_merger ${catkin_LIBRARIES})

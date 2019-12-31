@@ -365,3 +365,45 @@ void transformTree(OcTree *tree, Eigen::Matrix4f& transform) {
 
   delete transformed;
 }
+
+void align_maps(OcTree *tree1, OcTree *tree2, point3d translation,
+                double roll, double pitch, double yaw, double res) {
+  Pose6D pose(translation.x(),
+      translation.y(),
+      translation.z(),
+      roll, pitch, yaw);
+
+  // build a transform matrix
+  Eigen::Matrix4f transform;
+  std::vector<double> coeffs;
+  pose.rot().toRotMatrix(coeffs);
+
+  transform << coeffs[0], coeffs[1], coeffs[2], translation.x(),
+               coeffs[3], coeffs[4], coeffs[5], translation.y(),
+               coeffs[6], coeffs[7], coeffs[8], translation.z(),
+               0, 0, 0, 1;
+
+  // initial TF Matrix
+  cout << transform << endl;
+
+  // make point clouds from each map
+  pcl::PointCloud<pcl::PointXYZ> tree1Points;
+  tree2PointCloud(tree1, tree1Points);
+  pcl::PointCloud<pcl::PointXYZ> tree2Points;
+  tree2PointCloud(tree2, tree2Points);
+
+  // get refined matrix
+  transform = getICPTransformation(tree1Points, tree2Points, transform, res);
+
+  // Resulting transform after correction
+  cout << transform << endl;
+
+  if (roll != 0 ||
+      pitch != 0 ||
+      yaw != 0 ||
+      translation.x() != 0 ||
+      translation.y() != 0 ||
+      translation.z() != 0 ) {
+    transformTree(tree2, transform);
+  }
+}
