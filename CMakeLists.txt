@@ -18,5 +18,8 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
+add_library(icp_align src/icp_align.cpp)
+target_link_libraries(icp_align ${catkin_LIBRARIES})
+
 add_executable(octomap_merger src/octomap_merger.cpp)
-target_link_libraries(octomap_merger ${catkin_LIBRARIES})
+target_link_libraries(octomap_merger icp_align ${catkin_LIBRARIES})
