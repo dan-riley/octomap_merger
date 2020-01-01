@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<launch>
+  <arg name="robot_name" default="X1" />
+
+  <node ns="$(arg robot_name)" name="octomap_merger" pkg="octomap_merger" type="octomap_merger_node" output="screen">
+  </node>
+</launch>

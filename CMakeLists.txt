@@ -13,6 +13,17 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_ros
 )
 
+add_message_files(
+  FILES
+  OctomapArray.msg
+)
+
+generate_messages(
+   DEPENDENCIES
+   nav_msgs
+   octomap_msgs
+ )
+
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
@@ -26,3 +37,6 @@ target_link_libraries(map_merger ${catkin_LIBRARIES})
 
 add_executable(octomap_merger src/octomap_merger.cpp)
 target_link_libraries(octomap_merger icp_align map_merger ${catkin_LIBRARIES})
+
+add_executable(octomap_merger_node src/octomap_merger_node.cpp)
+target_link_libraries(octomap_merger_node icp_align map_merger ${catkin_LIBRARIES})

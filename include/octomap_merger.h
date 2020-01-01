@@ -1,4 +1,5 @@
 #include <Eigen/SVD>
+#include <ros/ros.h>
 #include <pcl/common/common.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/filters/voxel_grid.h>
@@ -9,12 +10,15 @@
 #include <pcl/registration/transforms.h>
 #include <octomap/octomap.h>
 #include <octomap/OcTreeBase.h>
+#include <octomap_msgs/Octomap.h>
+#include <octomap_msgs/conversions.h>
 #include <fstream>
 #include <iostream>
 #include <string.h>
 #include <stdlib.h>
 #include <list>
 #include <cmath>
+#include "octomap_merger/OctomapArray.h"
 
 using std::cout;
 using std::endl;
@@ -54,3 +58,37 @@ unsigned expandNodeMultiLevel(OcTreeBase<OcTreeNode> *base, OcTree *tree,
 int getNodeDepth(OcTree* tree, point3d& point, OcTreeNode* node);
 
 void merge_maps(OcTreeBase<OcTreeNode> *base, OcTree *tree1, OcTree *tree2);
+
+class OctomapMerger {
+  public:
+    // Constructor
+    OctomapMerger(ros::NodeHandle* nodehandle);
+    // Destructor
+    ~OctomapMerger();
+    // Callbacks
+    void callback_myMap(const octomap_msgs::Octomap::ConstPtr& msg);
+    void callback_neighborMaps(const octomap_merger::OctomapArrayConstPtr &msg);
+    // Public Methods
+    void merge();
+    // Variables
+    bool myMapNew;
+    bool otherMapsNew;
+
+  /* Private Variables and Methods */
+  private:
+    ros::NodeHandle nh_;
+
+    octomap_msgs::Octomap myMap;
+    octomap_merger::OctomapArray neighbors;
+    OcTreeBase<OcTreeNode> *base;
+    octomap::OcTree *tree1;
+    octomap::OcTree *tree2;
+
+    ros::Subscriber sub_mymap;
+    ros::Subscriber sub_neighbors;
+
+    ros::Publisher pub_merged;
+
+    void initializeSubscribers();
+    void initializePublishers();
+};
