@@ -1,14 +1,25 @@
 #include <octomap_merger.h>
 
-OctomapMerger::OctomapMerger(ros::NodeHandle* nodehandle, int merger_i,
-                             double resolution):nh_(*nodehandle) {
+OctomapMerger::OctomapMerger(ros::NodeHandle* nodehandle):nh_(*nodehandle) {
     ROS_INFO("Constructing OctomapMerger Class");
+
+    // Load parameters from launch file
+    // Set the merger type: 0: Octomap, 1: PCL-Kyle, 2: PCL-Jessup
+    nh_.param("octomap_merger/merger", merger, 0);
+    // Octomap type: 0: Binary, 1: Full
+    nh_.param("octomap_merger/octoType", octo_type, 0);
+    // Map resolution
+    nh_.param("octomap_merger/resolution", resolution, (double)0.2);
+
+    // Topics for Subscribing and Publishing
+    nh_.param<std::string>("octomap_merger/mapTopic", map_topic, "octomap_binary");
+    nh_.param<std::string>("octomap_merger/neighborsTopic", neighbors_topic, "neighbor_maps");
+    nh_.param<std::string>("octomap_merger/mergedTopic", merged_topic, "merged_map");
+
     initializeSubscribers();
     initializePublishers();
     myMapNew = false;
     otherMapsNew = false;
-    merger = merger_i;
-    res = resolution;
 
     // Initialize Octomap holders once, assign/overwrite each loop
     base = new typename OcTreeBase<OcTreeNode>::OcTreeBase(resolution);
@@ -22,17 +33,15 @@ OctomapMerger::~OctomapMerger() {
 
 void OctomapMerger::initializeSubscribers() {
     ROS_INFO("Initializing Subscribers");
-    // Make this a launch file parameter
-    sub_mymap = nh_.subscribe("octomap_binary", 100,
+    sub_mymap = nh_.subscribe(map_topic, 100,
                               &OctomapMerger::callback_myMap, this);
-    sub_neighbors = nh_.subscribe("neighbor_maps", 100,
+    sub_neighbors = nh_.subscribe(neighbors_topic, 100,
                                   &OctomapMerger::callback_neighborMaps, this);
 }
 
 void OctomapMerger::initializePublishers() {
     ROS_INFO("Initializing Publishers");
-    // Make this a launch file parameter
-    pub_merged = nh_.advertise<octomap_msgs::Octomap>("merged_map", 10, true);
+    pub_merged = nh_.advertise<octomap_msgs::Octomap>(merged_topic, 10, true);
 }
 
 // Callbacks
@@ -101,8 +110,10 @@ void OctomapMerger::octomap_to_pcl(octomap::OcTree* myTree,
 
 void OctomapMerger::merge() {
   ROS_INFO("Entered Merge Function");
-  // Change to allow binary or full, from launch file
-  tree1 = (octomap::OcTree*)octomap_msgs::binaryMsgToMap(myMap);
+  if (octo_type == 0)
+    tree1 = (octomap::OcTree*)octomap_msgs::binaryMsgToMap(myMap);
+  else
+    tree1 = (octomap::OcTree*)octomap_msgs::fullMsgToMap(myMap);
 
   // Create pointers if we're using PCL conversion
   ROS_INFO("Creating pointers");
@@ -129,7 +140,10 @@ void OctomapMerger::merge() {
   // For each map in the neighbor set
   for (int i=0; i < neighbors.num_octomaps; i++) {
     ROS_INFO("Merging neighbor...");
-    tree2 = (octomap::OcTree*)octomap_msgs::binaryMsgToMap(neighbors.octomaps[i]);
+    if (octo_type == 0)
+      tree2 = (octomap::OcTree*)octomap_msgs::binaryMsgToMap(neighbors.octomaps[i]);
+    else
+      tree2 = (octomap::OcTree*)octomap_msgs::fullMsgToMap(neighbors.octomaps[i]);
 
     // PCL merging
     if (merger > 0) {
@@ -177,7 +191,10 @@ void OctomapMerger::merge() {
   // Prune and publish the Octomap
   tree1->prune();
   octomap_msgs::Octomap msg;
-  octomap_msgs::binaryMapToMsg(*tree1, msg);
+  if (octo_type == 0)
+    octomap_msgs::binaryMapToMsg(*tree1, msg);
+  else
+    octomap_msgs::fullMapToMsg(*tree1, msg);
   msg.header.stamp = ros::Time::now();
   msg.header.frame_id = "world";
   pub_merged.publish(msg);
@@ -192,15 +209,7 @@ int main (int argc, char **argv) {
   ros::NodeHandle private_node_handle("~");
   private_node_handle.param("rate", rate, int(1));
 
-  // Map resolution
-  double resolution;
-  nh.param("octomap_merger/resolution", resolution, (double)0.2);
-
-  // Set the merger type: 0: Octomap, 1: PCL-Kyle, 2: PCL-Jessup
-  int merger;
-  nh.param("octomap_merger/merger", merger, 0);
-
-  OctomapMerger *octomap_merger = new OctomapMerger(&nh, merger, resolution);
+  OctomapMerger *octomap_merger = new OctomapMerger(&nh);
 
   ros::Rate r(rate);
   while(nh.ok()) {

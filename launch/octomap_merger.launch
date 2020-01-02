@@ -3,9 +3,21 @@
   <arg name="robot_name" default="X1" />
   <!-- Merger type - 0: Octomap, 1: PCL-Kyle, 2: PCL-Jessup -->
   <arg name="merger" default="0" />
+  <!-- Octomap type - 0: Binary, 1: Full -->
+  <arg name="octoType" default="0" />
+  <!-- Map resolution.  If different res needed for each need to change code -->
+  <arg name="resolution" default="0.2" />
+  <!-- Topics to subscribe and publish -->
+  <arg name="mapTopic" default="octomap_binary" />
+  <arg name="neighborsTopic" default="neighbor_maps" />
+  <arg name="mergedTopic" default="merged_map" />
 
   <node ns="$(arg robot_name)" name="octomap_merger" pkg="octomap_merger" type="octomap_merger_node" output="screen">
     <param name="merger" value="$(arg merger)" />
-    <param name="resolution" value="0.2" />
+    <param name="octoType" value="$(arg octoType)" />
+    <param name="resolution" value="$(arg resolution)" />
+    <param name="mapTopic" value="$(arg mapTopic)" />
+    <param name="neighborsTopic" value="$(arg neighborsTopic)" />
+    <param name="mergedTopic" value="$(arg mergedTopic)" />
   </node>
 </launch>

@@ -66,7 +66,7 @@ void merge_maps(OcTreeBase<OcTreeNode> *base, OcTree *tree1, OcTree *tree2);
 class OctomapMerger {
   public:
     // Constructor
-    OctomapMerger(ros::NodeHandle* nodehandle, int merger_i, double resolution);
+    OctomapMerger(ros::NodeHandle* nodehandle);
     // Destructor
     ~OctomapMerger();
     // Callbacks
@@ -78,7 +78,11 @@ class OctomapMerger {
     bool myMapNew;
     bool otherMapsNew;
     int merger;
-    double res;
+    int octo_type;
+    double resolution;
+    std::string map_topic;
+    std::string neighbors_topic;
+    std::string merged_topic;
 
   /* Private Variables and Methods */
   private:
