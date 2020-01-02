@@ -1,3 +1,6 @@
+#ifndef OCTOMAP_MERGER_H_
+#define OCTOMAP_MERGER_H_
+
 #include <Eigen/SVD>
 #include <ros/ros.h>
 #include <pcl/common/common.h>
@@ -8,6 +11,7 @@
 #include <pcl/registration/icp.h>
 #include <pcl/registration/icp_nl.h>
 #include <pcl/registration/transforms.h>
+#include <pcl_conversions/pcl_conversions.h>
 #include <octomap/octomap.h>
 #include <octomap/OcTreeBase.h>
 #include <octomap_msgs/Octomap.h>
@@ -62,7 +66,7 @@ void merge_maps(OcTreeBase<OcTreeNode> *base, OcTree *tree1, OcTree *tree2);
 class OctomapMerger {
   public:
     // Constructor
-    OctomapMerger(ros::NodeHandle* nodehandle);
+    OctomapMerger(ros::NodeHandle* nodehandle, int merger_i, double resolution);
     // Destructor
     ~OctomapMerger();
     // Callbacks
@@ -73,6 +77,8 @@ class OctomapMerger {
     // Variables
     bool myMapNew;
     bool otherMapsNew;
+    int merger;
+    double res;
 
   /* Private Variables and Methods */
   private:
@@ -89,6 +95,10 @@ class OctomapMerger {
 
     ros::Publisher pub_merged;
 
+    void octomap_to_pcl(octomap::OcTree* myTree,
+                        sensor_msgs::PointCloud2Ptr occupiedCellsMsg);
     void initializeSubscribers();
     void initializePublishers();
 };
+
+#endif
