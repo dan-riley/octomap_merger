@@ -13,7 +13,6 @@
 #include <pcl/registration/transforms.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <octomap/octomap.h>
-#include <octomap/OcTreeBase.h>
 #include <octomap_msgs/Octomap.h>
 #include <octomap_msgs/conversions.h>
 #include <fstream>
@@ -54,14 +53,7 @@ void transformTree(OcTree *tree, Eigen::Matrix4f& transform);
 void align_maps(OcTree *tree1, OcTree *tree2, point3d translation,
                 double roll, double pitch, double yaw, double res);
 
-void expandLevel(OcTreeBase<OcTreeNode> *base, std::vector<OcTreeNode *> *nodePtrs);
-
-unsigned expandNodeMultiLevel(OcTreeBase<OcTreeNode> *base, OcTree *tree,
-                      OcTreeNode *node, unsigned currentDepth, int levels);
-
-int getNodeDepth(OcTree* tree, point3d& point, OcTreeNode* node);
-
-void merge_maps(OcTreeBase<OcTreeNode> *base, OcTree *tree1, OcTree *tree2);
+void merge_maps(OcTree *tree1, OcTree *tree2);
 
 class OctomapMerger {
   public:
@@ -90,7 +82,7 @@ class OctomapMerger {
 
     octomap_msgs::Octomap myMap;
     octomap_merger::OctomapArray neighbors;
-    OcTreeBase<OcTreeNode> *base;
+    octomap::OcTree *treem;
     octomap::OcTree *tree1;
     octomap::OcTree *tree2;
 

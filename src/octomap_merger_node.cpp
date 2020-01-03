@@ -22,7 +22,7 @@ OctomapMerger::OctomapMerger(ros::NodeHandle* nodehandle):nh_(*nodehandle) {
     otherMapsNew = false;
 
     // Initialize Octomap holders once, assign/overwrite each loop
-    base = new typename OcTreeBase<OcTreeNode>::OcTreeBase(resolution);
+    treem = new octomap::OcTree(resolution);
     tree1 = new octomap::OcTree(resolution);
     tree2 = new octomap::OcTree(resolution);
 }
@@ -46,14 +46,14 @@ void OctomapMerger::initializePublishers() {
 
 // Callbacks
 void OctomapMerger::callback_myMap(const octomap_msgs::OctomapConstPtr& msg) {
-  ROS_INFO("my_map callback");
+  // ROS_INFO("my_map callback");
   myMap = *msg;
   myMapNew = true;
 }
 
 void OctomapMerger::callback_neighborMaps(
                 const octomap_merger::OctomapArrayConstPtr& msg) {
-  ROS_INFO("neighbors callback");
+  // ROS_INFO("neighbors callback");
   neighbors = *msg;
   otherMapsNew = true;
 }
@@ -115,13 +115,17 @@ void OctomapMerger::merge() {
   else
     tree1 = (octomap::OcTree*)octomap_msgs::fullMsgToMap(myMap);
 
+  // Assignming merged to self for now.  Remove if saving merged across runs.
+  treem = tree1;
+
   // Create pointers if we're using PCL conversion
   ROS_INFO("Creating pointers");
   sensor_msgs::PointCloud2Ptr myMapMsg(new sensor_msgs::PointCloud2);
+  // If we save merges across runs, need to change this, or PCL convert each time
   sensor_msgs::PointCloud2Ptr mergedMapMsg(new sensor_msgs::PointCloud2);
   sensor_msgs::PointCloud2Ptr neighborMapMsg(new sensor_msgs::PointCloud2);
 
-  // PCL merging
+  // Get the current self/merged map
   if (merger > 0) {
     ROS_INFO("Converting my map");
     // Multiple PCL conversion methods
@@ -135,6 +139,10 @@ void OctomapMerger::merge() {
     // Add map to merge
     ROS_INFO("Adding Map to Merge");
     pcl::concatenatePointCloud(*mergedMapMsg, *myMapMsg, *mergedMapMsg);
+  } else {
+    // Octomap merging between self and the saved merged map
+    // For now, merged tree is just self.  Uncomment here and remove earlier line.
+    // merge_maps(treem, tree1);
   }
 
   // For each map in the neighbor set
@@ -145,7 +153,7 @@ void OctomapMerger::merge() {
     else
       tree2 = (octomap::OcTree*)octomap_msgs::fullMsgToMap(neighbors.octomaps[i]);
 
-    // PCL merging
+    // Merge neighbor map
     if (merger > 0) {
       // Multiple PCL conversion methods
       if (merger == 1) {
@@ -160,15 +168,16 @@ void OctomapMerger::merge() {
       pcl::concatenatePointCloud(*mergedMapMsg, *neighborMapMsg, *mergedMapMsg);
     } else {
       // Octomap merging
-      merge_maps(base, tree1, tree2);
+      merge_maps(treem, tree2);
     }
     delete tree2;
   }
 
+  ROS_INFO("Converting map to ROS message");
   // Convert PCL to Octomap
   if (merger > 0) {
     // Clear the tree so we can rebuild it
-    tree1->clear();
+    treem->clear();
     octomap::Pointcloud octoPCL;
     octomap::point3d octo_points;
 
@@ -185,20 +194,23 @@ void OctomapMerger::merge() {
     }
 
     // Generate Octomap from Pointcloud
-    tree1->insertPointCloud(octoPCL, point3d(0,0,0));
+    treem->insertPointCloud(octoPCL, point3d(0,0,0));
   }
 
   // Prune and publish the Octomap
-  tree1->prune();
+  treem->prune();
   octomap_msgs::Octomap msg;
   if (octo_type == 0)
-    octomap_msgs::binaryMapToMsg(*tree1, msg);
+    octomap_msgs::binaryMapToMsg(*treem, msg);
   else
-    octomap_msgs::fullMapToMsg(*tree1, msg);
+    octomap_msgs::fullMapToMsg(*treem, msg);
   msg.header.stamp = ros::Time::now();
   msg.header.frame_id = "world";
   pub_merged.publish(msg);
-  delete tree1;
+
+  // Free the merged map.  If saving across runs, remove this!
+  // Tree1 needs to be deleted now or earlier if so.
+  delete treem;
 }
 
 int main (int argc, char **argv) {

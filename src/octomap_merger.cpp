@@ -32,9 +32,6 @@ int main(int argc, char** argv) {
   // Assume the resolution of each map is the same
   double res = tree1->getResolution();
 
-  // Create this Base to allow newer implmentation of Octomap from the original
-  OcTreeBase<OcTreeNode> *base = new typename OcTreeBase<OcTreeNode>::OcTreeBase(res);
-
   // Align the maps if desired.  Will slow down the process!
   if ((argc > 4) && (std::string(argv[4]) == "align")) {
     cout << "Registering map to Improve TF Estimate" << endl << endl;
@@ -58,7 +55,7 @@ int main(int argc, char** argv) {
     align_maps(tree1, tree2, translation, roll, pitch, yaw, res);
   }
 
-  merge_maps(base, tree1, tree2);
+  merge_maps(tree1, tree2);
 
   cout << "Compressing merged result\n";
   tree1->prune();
