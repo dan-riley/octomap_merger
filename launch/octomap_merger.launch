@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <launch>
-  <arg name="robot_name" default="X1" />
+  <arg name="vehicle" default="X1" />
   <!-- Merger type - 0: Octomap, 1: PCL-Kyle, 2: PCL-Jessup -->
   <arg name="merger" default="0" />
   <!-- Octomap type - 0: Binary, 1: Full -->
@@ -12,7 +12,7 @@
   <arg name="neighborsTopic" default="neighbor_maps" />
   <arg name="mergedTopic" default="merged_map" />
 
-  <node ns="$(arg robot_name)" name="octomap_merger" pkg="octomap_merger" type="octomap_merger_node" output="screen">
+  <node ns="$(arg vehicle)" name="octomap_merger" pkg="octomap_merger" type="octomap_merger_node" output="screen">
     <param name="merger" value="$(arg merger)" />
     <param name="octoType" value="$(arg octoType)" />
     <param name="resolution" value="$(arg resolution)" />
