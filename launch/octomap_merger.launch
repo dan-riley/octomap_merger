@@ -1,6 +1,7 @@
 <?xml version="1.0" ?>
 <launch>
-  <arg name="vehicle" default="X1" />
+  <arg name="vehicle" default="$(env ROS_HOSTNAME)" />
+  <arg name="ns" default="/$(arg vehicle)" />
   <!-- Type of node.  Current options are 'robot' and 'base' -->
   <arg name="type" default="robot" />
   <!-- Merger type - 0: Octomap, 1: PCL-Kyle, 2: PCL-Jessup -->
@@ -16,7 +17,7 @@
   <arg name="neighborsTopic" default="neighbor_maps" />
   <arg name="mergedTopic" default="merged_map" />
 
-  <node ns="$(arg vehicle)" name="octomap_merger" pkg="octomap_merger" type="octomap_merger_node" output="screen">
+  <node ns="$(arg ns)" name="octomap_merger" pkg="octomap_merger" type="octomap_merger_node" output="screen">
     <param name="type" value="$(arg type)" />
     <param name="merger" value="$(arg merger)" />
     <param name="octoType" value="$(arg octoType)" />

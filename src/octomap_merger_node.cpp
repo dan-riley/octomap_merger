@@ -156,7 +156,7 @@ void OctomapMerger::merge() {
       pcl::concatenatePointCloud(*mergedMapMsg, *myMapMsg, *mergedMapMsg);
     } else {
       // Octomap merging between self and the saved merged map
-      ROS_INFO("Merging self...");
+      // ROS_INFO("Merging self...");
       tree1_size = merge_maps(treem, tree1);
     }
   }
