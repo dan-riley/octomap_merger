@@ -15,6 +15,7 @@
 #include <octomap/octomap.h>
 #include <octomap_msgs/Octomap.h>
 #include <octomap_msgs/conversions.h>
+#include <std_msgs/Float64.h>
 #include <fstream>
 #include <iostream>
 #include <string.h>
@@ -53,7 +54,7 @@ void transformTree(OcTree *tree, Eigen::Matrix4f& transform);
 void align_maps(OcTree *tree1, OcTree *tree2, point3d translation,
                 double roll, double pitch, double yaw, double res);
 
-void merge_maps(OcTree *tree1, OcTree *tree2);
+double merge_maps(OcTree *tree1, OcTree *tree2);
 
 class OctomapMerger {
   public:
@@ -69,9 +70,11 @@ class OctomapMerger {
     // Variables
     bool myMapNew;
     bool otherMapsNew;
+    std::string type;
     int merger;
     int octo_type;
     double resolution;
+    int map_thresh;
     std::string map_topic;
     std::string neighbors_topic;
     std::string merged_topic;
@@ -85,11 +88,15 @@ class OctomapMerger {
     octomap::OcTree *treem;
     octomap::OcTree *tree1;
     octomap::OcTree *tree2;
+    double treem_size;
+    size_t tree1_last_size;
+    std::map<std::string, double> treen_last_size;
 
     ros::Subscriber sub_mymap;
     ros::Subscriber sub_neighbors;
 
     ros::Publisher pub_merged;
+    ros::Publisher pub_size;
 
     void octomap_to_pcl(octomap::OcTree* myTree,
                         sensor_msgs::PointCloud2Ptr occupiedCellsMsg);

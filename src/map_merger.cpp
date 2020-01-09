@@ -1,12 +1,16 @@
 #include <octomap_merger.h>
 
-void merge_maps(OcTree *tree1, OcTree *tree2) {
+double merge_maps(OcTree *tree1, OcTree *tree2) {
+  double size = 0;
   // Expand tree2 so we search all nodes
   tree2->expand();
 
   // traverse nodes in tree2 to add them to tree1
   for (OcTree::leaf_iterator it = tree2->begin_leafs();
                              it != tree2->end_leafs(); ++it) {
+
+    // Calculate the total volume of the tree so it can be saved
+    size += it.getSize();
 
     // find if the current node maps a point in map1
     point3d point = it.getCoordinate();
@@ -21,4 +25,6 @@ void merge_maps(OcTree *tree1, OcTree *tree2) {
       newNode->setLogOdds(it->getLogOdds());
     }
   }
+
+  return size;
 }
