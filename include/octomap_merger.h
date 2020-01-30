@@ -70,6 +70,7 @@ class OctomapMerger {
     // Variables
     bool myMapNew;
     bool otherMapsNew;
+    std::string id;
     std::string type;
     int merger;
     int octo_type;

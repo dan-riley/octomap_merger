@@ -4,6 +4,7 @@ OctomapMerger::OctomapMerger(ros::NodeHandle* nodehandle):nh_(*nodehandle) {
     ROS_INFO("Constructing OctomapMerger Class");
 
     // Load parameters from launch file
+    nh_.param<std::string>("octomap_merger/vehicle", id, "H01");
     // Type of agent (robot or base)
     nh_.param<std::string>("octomap_merger/type", type, "robot");
     // Set the merger type: 0: Octomap, 1: PCL-Kyle, 2: PCL-Jessup
@@ -179,7 +180,7 @@ void OctomapMerger::merge() {
     if ((tree2_size < tree2_last_size - map_thresh) ||
        ((tree2_size > tree2_last_size + map_thresh) &&
         (tree2_size > treem_size))) {
-      ROS_INFO("Merging neighbor %s", nid.data());
+      ROS_INFO("%s Merging neighbor %s", id.data(), nid.data());
 
       // Merge neighbor map
       if (merger > 0) {
