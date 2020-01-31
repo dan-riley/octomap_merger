@@ -16,6 +16,7 @@
   <arg name="mapTopic" default="octomap_binary" />
   <arg name="neighborsTopic" default="neighbor_maps" />
   <arg name="mergedTopic" default="merged_map" />
+  <arg name="mergedSizeTopic" default="merged_size" />
 
   <node ns="$(arg ns)" name="octomap_merger" pkg="octomap_merger" type="octomap_merger_node" output="screen">
     <param name="vehicle" value="$(arg vehicle)" />
@@ -27,5 +28,6 @@
     <param name="mapTopic" value="$(arg mapTopic)" />
     <param name="neighborsTopic" value="$(arg neighborsTopic)" />
     <param name="mergedTopic" value="$(arg mergedTopic)" />
+    <param name="mergedSizeTopic" value="$(arg mergedSizeTopic)" />
   </node>
 </launch>

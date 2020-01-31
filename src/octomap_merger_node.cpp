@@ -20,6 +20,7 @@ OctomapMerger::OctomapMerger(ros::NodeHandle* nodehandle):nh_(*nodehandle) {
     nh_.param<std::string>("octomap_merger/mapTopic", map_topic, "octomap_binary");
     nh_.param<std::string>("octomap_merger/neighborsTopic", neighbors_topic, "neighbor_maps");
     nh_.param<std::string>("octomap_merger/mergedTopic", merged_topic, "merged_map");
+    nh_.param<std::string>("octomap_merger/mergedSizeTopic", merged_size_topic, "merged_size");
 
     initializeSubscribers();
     initializePublishers();
@@ -50,7 +51,7 @@ void OctomapMerger::initializeSubscribers() {
 void OctomapMerger::initializePublishers() {
     ROS_INFO("Initializing Publishers");
     pub_merged = nh_.advertise<octomap_msgs::Octomap>(merged_topic, 10, true);
-    pub_size = nh_.advertise<std_msgs::Float64>("merged_size", 10, true);
+    pub_size = nh_.advertise<std_msgs::Float64>(merged_size_topic, 10, true);
 }
 
 // Callbacks

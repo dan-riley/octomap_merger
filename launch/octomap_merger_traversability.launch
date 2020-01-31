@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <launch>
-  <arg name="vehicle" default="X1" />
+  <arg name="vehicle" default="$(env ROS_HOSTNAME)" />
   <arg name="ns" default="/$(arg vehicle)" />
   <!-- Type of node.  Current options are 'robot' and 'base' -->
   <arg name="type" default="robot" />
@@ -13,9 +13,9 @@
   <!-- Size of map differences to trigger a merge -->
   <arg name="mapThresh" default="100" />
   <!-- Topics to subscribe and publish -->
-  <arg name="mapTopic" default="octomap_binary" />
-  <arg name="neighborsTopic" default="neighbor_maps" />
-  <arg name="mergedTopic" default="merged_map" />
+  <arg name="mapTopic" default="traversability_map" />
+  <arg name="neighborsTopic" default="neighbor_traversability_maps" />
+  <arg name="mergedTopic" default="merged_traversability_map" />
   <arg name="mergedSizeTopic" default="merged_size" />
 
   <node ns="$(arg ns)" name="octomap_merger" pkg="octomap_merger" type="octomap_merger_node" output="screen">

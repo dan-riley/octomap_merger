@@ -79,6 +79,7 @@ class OctomapMerger {
     std::string map_topic;
     std::string neighbors_topic;
     std::string merged_topic;
+    std::string merged_size_topic;
 
   /* Private Variables and Methods */
   private:
