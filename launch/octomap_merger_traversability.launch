@@ -16,9 +16,9 @@
   <arg name="mapTopic" default="traversability_map" />
   <arg name="neighborsTopic" default="neighbor_traversability_maps" />
   <arg name="mergedTopic" default="merged_traversability_map" />
-  <arg name="mergedSizeTopic" default="merged_size" />
+  <arg name="mergedSizeTopic" default="merged_traversability_size" />
 
-  <node ns="$(arg ns)" name="octomap_merger" pkg="octomap_merger" type="octomap_merger_node" output="screen">
+  <node ns="$(arg ns)" name="octomap_merger_traversability" pkg="octomap_merger" type="octomap_merger_node" output="screen">
     <param name="vehicle" value="$(arg vehicle)" />
     <param name="type" value="$(arg type)" />
     <param name="merger" value="$(arg merger)" />

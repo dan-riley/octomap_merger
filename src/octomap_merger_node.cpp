@@ -3,24 +3,25 @@
 OctomapMerger::OctomapMerger(ros::NodeHandle* nodehandle):nh_(*nodehandle) {
     ROS_INFO("Constructing OctomapMerger Class");
 
+    std::string nn = ros::this_node::getName();
     // Load parameters from launch file
-    nh_.param<std::string>("octomap_merger/vehicle", id, "H01");
+    nh_.param<std::string>(nn + "/vehicle", id, "H01");
     // Type of agent (robot or base)
-    nh_.param<std::string>("octomap_merger/type", type, "robot");
+    nh_.param<std::string>(nn + "/type", type, "robot");
     // Set the merger type: 0: Octomap, 1: PCL-Kyle, 2: PCL-Jessup
-    nh_.param("octomap_merger/merger", merger, 0);
+    nh_.param(nn + "/merger", merger, 0);
     // Octomap type: 0: Binary, 1: Full
-    nh_.param("octomap_merger/octoType", octo_type, 0);
+    nh_.param(nn + "/octoType", octo_type, 0);
     // Map resolution
-    nh_.param("octomap_merger/resolution", resolution, (double)0.2);
+    nh_.param(nn + "/resolution", resolution, (double)0.2);
     // Map size threshold to trigger a map merge
-    nh_.param("octomap_merger/mapThresh", map_thresh, 500);
+    nh_.param(nn + "/mapThresh", map_thresh, 500);
 
     // Topics for Subscribing and Publishing
-    nh_.param<std::string>("octomap_merger/mapTopic", map_topic, "octomap_binary");
-    nh_.param<std::string>("octomap_merger/neighborsTopic", neighbors_topic, "neighbor_maps");
-    nh_.param<std::string>("octomap_merger/mergedTopic", merged_topic, "merged_map");
-    nh_.param<std::string>("octomap_merger/mergedSizeTopic", merged_size_topic, "merged_size");
+    nh_.param<std::string>(nn + "/mapTopic", map_topic, "octomap_binary");
+    nh_.param<std::string>(nn + "/neighborsTopic", neighbors_topic, "neighbor_maps");
+    nh_.param<std::string>(nn + "/mergedTopic", merged_topic, "merged_map");
+    nh_.param<std::string>(nn + "/mergedSizeTopic", merged_size_topic, "merged_size");
 
     initializeSubscribers();
     initializePublishers();
@@ -251,7 +252,7 @@ void OctomapMerger::merge() {
 }
 
 int main (int argc, char **argv) {
-  ros::init(argc, argv, "octomap_merger");
+  ros::init(argc, argv, "octomap_merger", ros::init_options::AnonymousName);
   ros::NodeHandle nh;
 
   int rate;
