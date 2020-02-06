@@ -125,6 +125,8 @@ void OctomapMerger::merge() {
   else
     tree1 = (octomap::OcTree*)octomap_msgs::fullMsgToMap(myMap);
 
+  if (!tree1) return;
+
   // Create pointers if we're using PCL conversion
   sensor_msgs::PointCloud2Ptr myMapMsg(new sensor_msgs::PointCloud2);
   sensor_msgs::PointCloud2Ptr mergedMapMsg(new sensor_msgs::PointCloud2);
