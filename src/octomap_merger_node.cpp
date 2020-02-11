@@ -22,6 +22,7 @@ OctomapMerger::OctomapMerger(ros::NodeHandle* nodehandle):nh_(*nodehandle) {
     nh_.param<std::string>(nn + "/neighborsTopic", neighbors_topic, "neighbor_maps");
     nh_.param<std::string>(nn + "/mergedTopic", merged_topic, "merged_map");
     nh_.param<std::string>(nn + "/mergedSizeTopic", merged_size_topic, "merged_size");
+    nh_.param<std::string>(nn + "/pclTopic", pcl_topic, "pc2_out");
 
     initializeSubscribers();
     initializePublishers();
@@ -53,6 +54,8 @@ void OctomapMerger::initializePublishers() {
     ROS_INFO("Initializing Publishers");
     pub_merged = nh_.advertise<octomap_msgs::Octomap>(merged_topic, 10, true);
     pub_size = nh_.advertise<std_msgs::Float64>(merged_size_topic, 10, true);
+    if (type == "base")
+        pub_pcl = nh_.advertise<sensor_msgs::PointCloud2>(pcl_topic, 10, true);
 }
 
 // Callbacks
@@ -241,6 +244,19 @@ void OctomapMerger::merge() {
   size_msg.data = treem_size;
   pub_size.publish(size_msg);
 
+  // For Base Station, convert to PCL before pruning and publish
+  if (type == "base") {
+    sensor_msgs::PointCloud2 pcl;
+    // octomap_to_pcl(treem, mergedMapMsg);
+    // pcl::toROSMsg(*mergedMapMsg, pcl);
+    PointCloud::Ptr occupiedCells(new PointCloud);
+    tree2PointCloud(treem, *occupiedCells);
+    pcl::toROSMsg(*occupiedCells, pcl);
+    pcl.header.stamp = ros::Time::now();
+    pcl.header.frame_id = "world";
+    pub_pcl.publish(pcl);
+  }
+
   // Prune and publish the Octomap
   treem->prune();
   octomap_msgs::Octomap msg;
@@ -251,15 +267,16 @@ void OctomapMerger::merge() {
   msg.header.stamp = ros::Time::now();
   msg.header.frame_id = "world";
   pub_merged.publish(msg);
+
 }
 
 int main (int argc, char **argv) {
   ros::init(argc, argv, "octomap_merger", ros::init_options::AnonymousName);
   ros::NodeHandle nh;
 
-  int rate;
-  ros::NodeHandle private_node_handle("~");
-  private_node_handle.param("rate", rate, int(1));
+  double rate;
+  std::string nn = ros::this_node::getName();
+  nh.param(nn + "/rate", rate, (double)1.0);
 
   OctomapMerger *octomap_merger = new OctomapMerger(&nh);
 

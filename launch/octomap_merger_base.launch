@@ -1,9 +1,9 @@
 <?xml version="1.0" ?>
 <launch>
-  <arg name="vehicle" default="$(env ROS_HOSTNAME)" />
+  <arg name="vehicle" default="Base" />
   <arg name="ns" default="/$(arg vehicle)" />
   <!-- Type of node.  Current options are 'robot' and 'base' -->
-  <arg name="type" default="robot" />
+  <arg name="type" default="base" />
   <!-- Merger type - 0: Octomap, 1: PCL-Kyle, 2: PCL-Jessup -->
   <arg name="merger" default="0" />
   <!-- Octomap type - 0: Binary, 1: Full -->

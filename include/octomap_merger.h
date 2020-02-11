@@ -12,6 +12,7 @@
 #include <pcl/registration/icp_nl.h>
 #include <pcl/registration/transforms.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <sensor_msgs/PointCloud2.h>
 #include <octomap/octomap.h>
 #include <octomap_msgs/Octomap.h>
 #include <octomap_msgs/conversions.h>
@@ -80,6 +81,7 @@ class OctomapMerger {
     std::string neighbors_topic;
     std::string merged_topic;
     std::string merged_size_topic;
+    std::string pcl_topic;
 
   /* Private Variables and Methods */
   private:
@@ -99,6 +101,7 @@ class OctomapMerger {
 
     ros::Publisher pub_merged;
     ros::Publisher pub_size;
+    ros::Publisher pub_pcl;
 
     void octomap_to_pcl(octomap::OcTree* myTree,
                         sensor_msgs::PointCloud2Ptr occupiedCellsMsg);

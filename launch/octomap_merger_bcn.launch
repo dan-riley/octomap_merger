@@ -3,7 +3,7 @@
   <arg name="vehicle" default="$(env ROS_HOSTNAME)" />
   <arg name="ns" default="/$(arg vehicle)" />
   <!-- Type of node.  Current options are 'robot' and 'base' -->
-  <arg name="type" default="robot" />
+  <arg name="type" default="beacon" />
   <!-- Merger type - 0: Octomap, 1: PCL-Kyle, 2: PCL-Jessup -->
   <arg name="merger" default="0" />
   <!-- Octomap type - 0: Binary, 1: Full -->
@@ -11,7 +11,7 @@
   <!-- Map resolution.  If different res needed for each need to change code -->
   <arg name="resolution" default="0.2" />
   <!-- Rate to run the node at -->
-  <arg name="rate" default="1.0" />
+  <arg name="rate" default="0.5" />
   <!-- Size of map differences to trigger a merge -->
   <arg name="mapThresh" default="100" />
   <!-- Topics to subscribe and publish -->
