@@ -52,10 +52,10 @@ void OctomapMerger::initializeSubscribers() {
 
 void OctomapMerger::initializePublishers() {
     ROS_INFO("Initializing Publishers");
-    pub_merged = nh_.advertise<octomap_msgs::Octomap>(merged_topic, 10, true);
-    pub_size = nh_.advertise<std_msgs::Float64>(merged_size_topic, 10, true);
+    pub_merged = nh_.advertise<octomap_msgs::Octomap>(merged_topic, 1, true);
+    pub_size = nh_.advertise<std_msgs::Float64>(merged_size_topic, 1, true);
     if (type == "base")
-        pub_pcl = nh_.advertise<sensor_msgs::PointCloud2>(pcl_topic, 10, true);
+        pub_pcl = nh_.advertise<sensor_msgs::PointCloud2>(pcl_topic, 1, true);
 }
 
 // Callbacks
