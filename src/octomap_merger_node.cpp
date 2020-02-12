@@ -10,6 +10,10 @@ OctomapMerger::OctomapMerger(ros::NodeHandle* nodehandle):nh_(*nodehandle) {
     nh_.param<std::string>(nn + "/type", type, "robot");
     // Set the merger type: 0: Octomap, 1: PCL-Kyle, 2: PCL-Jessup
     nh_.param(nn + "/merger", merger, 0);
+    // Full merging or prioritize own map
+    nh_.param(nn + "/full_merge", full_merge, true);
+    // Keep free space from any agent instead of adding obstacles
+    nh_.param(nn + "/free_prioritize", free_prioritize, false);
     // Octomap type: 0: Binary, 1: Full
     nh_.param(nn + "/octoType", octo_type, 0);
     // Map resolution
@@ -30,10 +34,11 @@ OctomapMerger::OctomapMerger(ros::NodeHandle* nodehandle):nh_(*nodehandle) {
     otherMapsNew = false;
 
     // Initialize Octomap holders once, assign/overwrite each loop
+    treep = new octomap::OcTree(resolution);
     treem = new octomap::OcTree(resolution);
     tree1 = new octomap::OcTree(resolution);
     tree2 = new octomap::OcTree(resolution);
-    treem_size = 0;
+    treep_size = 0;
     if (type == "robot") tree1_last_size = 0;
     else tree1_last_size = map_thresh;
 }
@@ -140,38 +145,8 @@ void OctomapMerger::merge() {
   size_t tree1_size;
   double tree2_size, tree2_last_size;
   std::string nid;
-  if (type == "robot") tree1_size = tree1->getNumLeafNodes();
-  else tree1_size = map_thresh;
 
-  if ((tree1_size < tree1_last_size - map_thresh) ||
-      (tree1_size > tree1_last_size + map_thresh)) {
-    tree1_last_size = tree1_size;
-
-    // Get the current self/merged map
-    if (merger > 0) {
-      // Multiple PCL conversion methods
-      if (merger == 1) {
-        // Could store the merged PCL in memory, or we just do the conversion each time
-        octomap_to_pcl(treem, mergedMapMsg);
-        octomap_to_pcl(tree1, myMapMsg);
-      } else {
-        // This doesn't currently work properly with the stored merged map!
-        PointCloud::Ptr occupiedCells(new PointCloud);
-        tree2PointCloud(tree1, *occupiedCells);
-        pcl::toROSMsg(*occupiedCells, *myMapMsg);
-      }
-      // Add map to merge
-      pcl::concatenatePointCloud(*mergedMapMsg, *myMapMsg, *mergedMapMsg);
-    } else {
-      // Octomap merging between self and the saved merged map
-      // ROS_INFO("Merging self...");
-      tree1_size = merge_maps(treem, tree1);
-    }
-  }
-
-  // Done with self tree, free the memory
-  delete tree1;
-
+  // Merge all of the neighbors into a tree first
   // For each map in the neighbor set
   for (int i=0; i < neighbors.num_octomaps; i++) {
     if (octo_type == 0)
@@ -186,7 +161,7 @@ void OctomapMerger::merge() {
     tree2_size = neighbors.sizes[i];
     if ((tree2_size < tree2_last_size - map_thresh) ||
        ((tree2_size > tree2_last_size + map_thresh) &&
-        (tree2_size > treem_size))) {
+        (tree2_size > treep_size))) {
       ROS_INFO("%s Merging neighbor %s", id.data(), nid.data());
 
       // Merge neighbor map
@@ -203,7 +178,7 @@ void OctomapMerger::merge() {
         pcl::concatenatePointCloud(*mergedMapMsg, *neighborMapMsg, *mergedMapMsg);
       } else {
         // Octomap merging
-        treen_last_size[nid.data()] = merge_maps(treem, tree2);
+        treen_last_size[nid.data()] = merge_maps(treem, tree2, true, free_prioritize);
       }
     }
 
@@ -211,10 +186,49 @@ void OctomapMerger::merge() {
     delete tree2;
   }
 
+  // Merge into the published tree
+  if (full_merge) {
+    if (type == "robot") tree1_size = tree1->getNumLeafNodes();
+    else tree1_size = map_thresh;
+
+    if ((tree1_size < tree1_last_size - map_thresh) ||
+        (tree1_size > tree1_last_size + map_thresh)) {
+      tree1_last_size = tree1_size;
+
+      // Get the current self/merged map
+      if (merger > 0) {
+        // Multiple PCL conversion methods
+        if (merger == 1) {
+          // Could store the merged PCL in memory, or we just do the conversion each time
+          octomap_to_pcl(treem, mergedMapMsg);
+          octomap_to_pcl(tree1, myMapMsg);
+        } else {
+          // This doesn't currently work properly with the stored merged map!
+          PointCloud::Ptr occupiedCells(new PointCloud);
+          tree2PointCloud(tree1, *occupiedCells);
+          pcl::toROSMsg(*occupiedCells, *myMapMsg);
+        }
+        // Add map to merge
+        pcl::concatenatePointCloud(*mergedMapMsg, *myMapMsg, *mergedMapMsg);
+      } else {
+        // Octomap merging between self and the saved merged map
+        // ROS_INFO("Merging self...");
+        tree1_size = merge_maps(treem, tree1, true, free_prioritize);
+      }
+    }
+
+    // The published map is the fully merged map
+    treep = treem;
+  } else {
+    // The published map starts with the self map and only appends merged
+    treep = tree1;
+    merge_maps(treep, treem, false, free_prioritize);
+  }
+
   // Convert PCL to Octomap
   if (merger > 0) {
     // Clear the tree so we can rebuild it
-    treem->clear();
+    treep->clear();
     octomap::Pointcloud octoPCL;
     octomap::point3d octo_points;
 
@@ -231,26 +245,24 @@ void OctomapMerger::merge() {
     }
 
     // Generate Octomap from Pointcloud
-    treem->insertPointCloud(octoPCL, point3d(0,0,0));
+    treep->insertPointCloud(octoPCL, point3d(0,0,0));
   }
 
   // Get the size of the map and publish it so multi-agent can send it
-  treem_size = 0;
-  treem->expand();
-  for (OcTree::leaf_iterator it = treem->begin_leafs(); it != treem->end_leafs(); ++it) {
-    treem_size += it.getSize();
+  treep_size = 0;
+  treep->expand();
+  for (OcTree::leaf_iterator it = treep->begin_leafs(); it != treep->end_leafs(); ++it) {
+    treep_size += it.getSize();
   }
   std_msgs::Float64 size_msg;
-  size_msg.data = treem_size;
+  size_msg.data = treep_size;
   pub_size.publish(size_msg);
 
   // For Base Station, convert to PCL before pruning and publish
   if (type == "base") {
     sensor_msgs::PointCloud2 pcl;
-    // octomap_to_pcl(treem, mergedMapMsg);
-    // pcl::toROSMsg(*mergedMapMsg, pcl);
     PointCloud::Ptr occupiedCells(new PointCloud);
-    tree2PointCloud(treem, *occupiedCells);
+    tree2PointCloud(treep, *occupiedCells);
     pcl::toROSMsg(*occupiedCells, pcl);
     pcl.header.stamp = ros::Time::now();
     pcl.header.frame_id = "world";
@@ -258,16 +270,16 @@ void OctomapMerger::merge() {
   }
 
   // Prune and publish the Octomap
-  treem->prune();
+  treep->prune();
   octomap_msgs::Octomap msg;
   if (octo_type == 0)
-    octomap_msgs::binaryMapToMsg(*treem, msg);
+    octomap_msgs::binaryMapToMsg(*treep, msg);
   else
-    octomap_msgs::fullMapToMsg(*treem, msg);
+    octomap_msgs::fullMapToMsg(*treep, msg);
   msg.header.stamp = ros::Time::now();
   msg.header.frame_id = "world";
   pub_merged.publish(msg);
-
+  delete tree1;
 }
 
 int main (int argc, char **argv) {

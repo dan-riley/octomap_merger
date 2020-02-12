@@ -55,7 +55,7 @@ void transformTree(OcTree *tree, Eigen::Matrix4f& transform);
 void align_maps(OcTree *tree1, OcTree *tree2, point3d translation,
                 double roll, double pitch, double yaw, double res);
 
-double merge_maps(OcTree *tree1, OcTree *tree2);
+double merge_maps(OcTree *tree1, OcTree *tree2, bool full_merge, bool free_prioritize);
 
 class OctomapMerger {
   public:
@@ -74,6 +74,8 @@ class OctomapMerger {
     std::string id;
     std::string type;
     int merger;
+    bool full_merge;
+    bool free_prioritize;
     int octo_type;
     double resolution;
     int map_thresh;
@@ -90,9 +92,10 @@ class OctomapMerger {
     octomap_msgs::Octomap myMap;
     octomap_merger::OctomapArray neighbors;
     octomap::OcTree *treem;
+    octomap::OcTree *treep;
     octomap::OcTree *tree1;
     octomap::OcTree *tree2;
-    double treem_size;
+    double treep_size;
     size_t tree1_last_size;
     std::map<std::string, double> treen_last_size;
 

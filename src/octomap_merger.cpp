@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
     align_maps(tree1, tree2, translation, roll, pitch, yaw, res);
   }
 
-  merge_maps(tree1, tree2);
+  merge_maps(tree1, tree2, true, false);
 
   cout << "Compressing merged result\n";
   tree1->prune();
