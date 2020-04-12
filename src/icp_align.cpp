@@ -1,21 +1,5 @@
 #include <octomap_merger.h>
 
-void tree2PointCloud(OcTree *tree, pcl::PointCloud<pcl::PointXYZ>& pclCloud) {
-  // now, traverse all leafs in the tree:
-  for (OcTree::leaf_iterator it = tree->begin_leafs(),
-       end = tree->end_leafs(); it != end; ++it)
-  {
-    if (tree->isNodeOccupied(*it)) {
-      pclCloud.push_back(
-          pcl::PointXYZ(it.getX(),
-            it.getY(),
-            it.getZ()
-            )
-          );
-    }
-  }
-}
-
 bool pointInBBox(pcl::PointXYZ& point,
                  pcl::PointXYZ& bboxMin,
                  pcl::PointXYZ& bboxMax) {
@@ -366,7 +350,7 @@ void transformTree(OcTree *tree, Eigen::Matrix4f& transform) {
   delete transformed;
 }
 
-void align_maps(OcTree *tree1, OcTree *tree2, point3d translation,
+void align_maps(OcTreeStamped *tree1, OcTree *tree2, point3d translation,
                 double roll, double pitch, double yaw, double res) {
   Pose6D pose(translation.x(),
       translation.y(),

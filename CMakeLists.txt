@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   OctomapArray.msg
+  OctomapNeighbors.msg
 )
 
 generate_messages(
@@ -27,6 +28,10 @@ generate_messages(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+)
+
+catkin_package(
+  CATKIN_DEPENDS message_runtime
 )
 
 add_library(icp_align src/icp_align.cpp)

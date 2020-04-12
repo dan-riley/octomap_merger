@@ -20,17 +20,24 @@ int main(int argc, char** argv) {
 
   cout << "\nReading octree files...\n";
 
-  OcTree *tree1, *tree2;
+  OcTree *treet, *tree2;
   if (filename1.substr(filename1.length() - 2) == "ot") {
-    tree1 = dynamic_cast<OcTree*>(OcTree::read(filename1));
+    treet = dynamic_cast<OcTree*>(OcTree::read(filename1));
     tree2 = dynamic_cast<OcTree*>(OcTree::read(filename2));
   } else {
-    tree1 = new OcTree(filename1);
+    treet = new OcTree(filename1);
     tree2 = new OcTree(filename2);
   }
 
   // Assume the resolution of each map is the same
-  double res = tree1->getResolution();
+  double res = treet->getResolution();
+
+  // Convert treet to OcTreeStamped
+  OcTreeStamped *tree1 = new OcTreeStamped(res);
+  for (OcTree::leaf_iterator it = treet->begin_leafs(); it != treet->end_leafs(); ++it) {
+    OcTreeKey nodeKey = it.getKey();
+    tree1->setNodeValue(nodeKey, it->getLogOdds());
+  }
 
   // Align the maps if desired.  Will slow down the process!
   if ((argc > 4) && (std::string(argv[4]) == "align")) {
@@ -55,7 +62,8 @@ int main(int argc, char** argv) {
     align_maps(tree1, tree2, translation, roll, pitch, yaw, res);
   }
 
-  merge_maps(tree1, tree2, true, false);
+  cout << "about to merge maps" << endl;
+  merge_maps(tree1, tree2, true, false, false, false);
 
   cout << "Compressing merged result\n";
   tree1->prune();

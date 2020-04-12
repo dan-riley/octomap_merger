@@ -1,5 +1,4 @@
 Header header
 octomap_msgs/Octomap[] octomaps
-string[] owners
-float64[] sizes
+string owner
 uint8 num_octomaps
