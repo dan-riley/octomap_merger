@@ -45,3 +45,6 @@ target_link_libraries(octomap_merger icp_align map_merger ${catkin_LIBRARIES})
 
 add_executable(octomap_merger_node src/octomap_merger_node.cpp)
 target_link_libraries(octomap_merger_node icp_align map_merger ${catkin_LIBRARIES})
+
+add_executable(align_test_node src/align_test_node.cpp)
+target_link_libraries(align_test_node icp_align map_merger ${catkin_LIBRARIES})

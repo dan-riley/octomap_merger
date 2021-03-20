@@ -86,6 +86,7 @@ class OctomapMerger {
     // Callbacks
     void callback_myMap(const octomap_msgs::Octomap::ConstPtr& msg);
     void callback_neighborMaps(const octomap_merger::OctomapNeighborsConstPtr &msg);
+    void callback_alignMap(const octomap_msgs::Octomap::ConstPtr& msg);
     // Public Methods
     void merge();
     // Variables
@@ -113,6 +114,7 @@ class OctomapMerger {
     ros::NodeHandle nh_;
 
     octomap_msgs::Octomap myMap;
+    octomap_msgs::Octomap alignMap;
     octomap_merger::OctomapArray mapdiffs;
     octomap_merger::OctomapNeighbors neighbors;
     octomap::OcTreeStamped *tree_merged;
